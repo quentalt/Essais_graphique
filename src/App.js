@@ -1,136 +1,62 @@
-import React, {useEffect, useRef} from "react";
-import * as d3 from "d3";
-import {IconButton} from "@mui/material";
-import CircleIcon from '@mui/icons-material/Circle';
-import {HorizontalRule} from "@mui/icons-material";
+import React, {useEffect, useRef, useState} from 'react';
+import * as d3 from 'd3';
 
-export default function App() {
-    const ref = useRef()
-    let line = null
-    let start = null
+function App() {
+    const svgRef = useRef(null);
+    const [data, setData] = useState([{ x: 50, y: 50 }, { x: 100, y: 100 }, { x: 150, y: 150 }]);
+    const [selectedCircle, setSelectedCircle] = useState(null);
 
-    const addCircle = () => {
-        const svgElement = d3.select(ref.current)
+    useEffect(() => {
+        const svg = d3.select(svgRef.current);
 
-        const drag = d3.drag()
-            .on("start", dragStart)
-            .on("drag", dragging)
-            .on("end", dragEnd)
-
-
-        function dragStart(event) {
-            d3.select(this).raise().classed("active", true);
-        }
-
-        function dragging(event) {
-            d3.select(this)
-                .attr("cx", event.x)
-                .attr("cy", event.y);
-        }
-
-        function dragEnd() {
-            d3.select(this).attr("stroke", "black").classed("active", false);
-        }
-
-
-        svgElement.append("circle")
-            .attr("cx", Math.random() * 300, d => d.x)
-            .attr("cy", Math.random() * 140, d => d.y)
-            .attr("r", 10)
-            .attr("fill", "white")
-            .attr("stroke", "black")
-            .attr("stroke-width", 4)
-            .call(drag)
-    }
-
-    function  addLine() {
-        const svgElement = d3.select(ref.current)
-
-        const drag = d3.drag()
-            .on("start", dragStart)
-            .on("drag", dragging)
-            .on("end", dragEnd)
-
-        function dragStart(event) {
-            d3.select(this).raise().classed("active", true);
-        }
-
-        function dragging(event) {
-            d3.select(this)
-                .attr("x1", event.x)
-                .attr("y1", event.y);
-        }
-
-        function dragEnd() {
-            d3.select(this).attr("stroke", "black").classed("active", false);
-        }
-
-        svgElement.append("line")
-            .attr("x1", Math.random() * 300, d => d.x)
-            .attr("y1", Math.random() * 140, d => d.y)
-            .attr("x2", Math.random() * 300, d => d.x)
-            .attr("y2", Math.random() * 140, d => d.y)
-            .attr("stroke", "black")
-            .attr("stroke-width", 4)
-            .call(drag)
-
-        function circleContextMenu(event) {
-            event.preventDefault()
-            if (!start) {
-                start = d3.select(this.parentNode).select("circle:first-of-type")
-            } else {
-                if (!line) {
-                    line = d3.select(ref.current).append("line")
-                        .attr("stroke", "green")
+        // Add circles with black borders
+        svg
+            .selectAll('circle')
+            .data(data)
+            .join('circle')
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+            .attr('r', 20)
+            .attr('stroke-width', 6)
+            .attr('stroke', 'black')
+            .attr('fill', 'white')
+            .on('mousedown', (d, i, n) => {
+                d.xStart = d3.event.x;
+                d.yStart = d3.event.y;
+                d3.select(n[i]).raise();
+            })
+            .on('mousemove', (d) => {
+                if (d.xStart) {
+                    d.x = d3.event.x;
+                    d.y = d3.event.y;
+                    d3.select(this).attr('cx', d.x).attr('cy', d.y);
                 }
-                updateLine()
-                start = null
-            }
-        }
+            })
+            .on('mouseup', (d) => {
+                d.xStart = null;
+                d.yStart = null;
+            })
+            .on('click', (d, i, n) => {
+                if (selectedCircle) {
+                    svg
+                        .append('line')
+                        .attr('x1', selectedCircle.x)
+                        .attr('y1', selectedCircle.y)
+                        .attr('x2', d.x)
+                        .attr('y2', d.y)
+                        .attr('stroke', 'black');
+                    setSelectedCircle(null);
+                } else {
+                    setSelectedCircle(d);
+                }
+            });
 
-        function updateLine() {
-            const end = d3.select(this.parentNode).select("circle:first-of-type")
-            line.attr("x1", start.attr("cx"))
-                .attr("y1", start.attr("cy"))
-                .attr("x2", end.attr("cx"))
-                .attr("y2", end.attr("cy"))
-        }
-    }
+    }, [data, selectedCircle]);
 
-
-
-
-
-    /*function circleClick(event, d) {
-        event.preventDefault()
-        if (!start) {
-            start = d3.select(this.parentNode).select("circle:first-of-type")
-        } else {
-            if (!line) {
-                line = d3.select(ref.current).append("line")
-            }
-            line
-                .attr("x1", start.attr("cx"))
-                .attr("y1", start.attr("cy"))
-                .attr("x2", d3.select(this.parentNode).select("circle:first-of-type").attr("cx"))
-                .attr("y2", d3.select(this.parentNode).select("circle:first-of-type").attr("cy"))
-                .attr("stroke", "black")
-            start = null
-        }
-    }
-*/
-
-        return (
-            <div>
-                <IconButton onClick={addCircle}>
-                    <CircleIcon/>
-                </IconButton>
-                <IconButton>
-                    <HorizontalRule onClick={addLine}/>
-                </IconButton>
-                <svg width={1000} height={1000} ref={ref}/>
-
-            </div>
-        )
-
+    return (
+        <svg ref={svgRef} width={500} height={500}>
+        </svg>
+    );
 }
+
+export default App;
